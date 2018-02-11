@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 # ------------------------------------------------+
 #                                                 |
-#  TRADING                                        |
+#  TRADING HUB                                    |
 #                                                 |
 #                                                 |
 # ------------------------------------------------+
 import gdax
 import re
-import decision
+import engine
 import time
 import logging
-logging.basicConfig(format='%(asctime)s %(filename)15s %(funcName)20s %(levelname)s:%(message)s')
-logger = logging.getLogger('gdax.logger')
+logging.basicConfig(format='%(asctime)s %(name)15s %(levelname)10s:%(message)s')
+logger = logging.getLogger('gdax.hub')
 logger.setLevel(logging.INFO)
 
 
@@ -28,18 +28,11 @@ for line in open('./utils/configs_prod.ini'):
 pc = gdax.PublicClient()
 
 # authorized client
-#ac = gdax.AuthenticatedClient(APIKEY, APISECRET, PASSPHRASE, api_url="https://api-public.sandbox.gdax.com")
 ac = gdax.AuthenticatedClient(APIKEY, APISECRET, PASSPHRASE)
 
 while True:
-    buy_order = decision.generate_buy_order(ac, pc)  
-    sell_order = decision.generate_sell_order(ac, pc)  
-    time.sleep(2)
-
-#    print(buy_order)
-#    print(sell_order)
-
-
+    buy_order = engine.generate_buy_order(ac, pc)  
+    sell_order = engine.generate_sell_order(ac, pc)  
 
 
 
