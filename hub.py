@@ -8,7 +8,7 @@
 import gdax
 import re
 import engine
-import time
+from time import sleep
 import logging
 logging.basicConfig(format='%(asctime)s %(name)15s %(levelname)10s:%(message)s')
 logger = logging.getLogger('gdax.hub')
@@ -34,5 +34,6 @@ n = 0
 while True:
     n+=1
     engine.generate_buy_order(ac, pc, n)  
+    engine.generate_sell_order(ac, pc)
     sleep(1)
 
