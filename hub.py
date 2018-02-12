@@ -30,21 +30,9 @@ pc = gdax.PublicClient()
 # authorized client
 ac = gdax.AuthenticatedClient(APIKEY, APISECRET, PASSPHRASE)
 
+n = 0
 while True:
-    buy_order = engine.generate_buy_order(ac, pc)  
-    sell_order = engine.generate_sell_order(ac, pc)  
+    n+=1
+    engine.generate_buy_order(ac, pc, n)  
+    sleep(1)
 
-
-
-
-#print(ac.get_accounts())
-#print(ac.get_orders())
-#print(pc.get_product_trades(product_id='BTC-EUR'))
-#print(pc.get_product_historic_rates('BTC-EUR', granularity=10000))
-#print(pc.get_product_24hr_stats('BTC-EUR'))
-#print(pc.get_time())
-#print(pc.get_currencies())
-#print(pc.get_product_ticker(product_id='BTC-EUR'))
-#print(pc.get_products())
-#print(pc.get_product_order_book('BTC-EUR',level=1))
-#print(pc.get_product_order_book('BTC-EUR',level=3))
