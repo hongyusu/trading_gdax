@@ -53,7 +53,7 @@ price_pool = [0]*10
 
 def buy_order_from_pp():
     global price_pool
-    logger.info("<--- {:.2f} --  {} -- {:.2f} -- {} -- {:.2f} -- {} -- {:.2f}".format(
+    logger.debug("<--- {:.2f} --  {} -- {:.2f} -- {} -- {:.2f} -- {} -- {:.2f}".format(
         price_pool[-1], 
         price_pool[-1] < price_pool[-2], 
         price_pool[-2], 
@@ -63,6 +63,7 @@ def buy_order_from_pp():
         price_pool[-4]))
     try:
         if price_pool[-1] < price_pool[-2] and price_pool[-2] < price_pool[-3] and price_pool[-3] < price_pool[-4]:
+            #return False 
             return True
         else:
             return False
@@ -83,7 +84,7 @@ def generate_buy_order(ac, pc, n):
         if buy_order_from_pp():
             price_to_buy -= 0.05
             euro_cost = price_to_buy * LIMIT_VOLUME 
-            euro_pool = eval(ac.get_account('e1ce1c04-208f-4e18-8062-52961c9c7eb7')['balance']) - 70
+            euro_pool = eval(ac.get_account('e1ce1c04-208f-4e18-8062-52961c9c7eb7')['balance']) - 30
             if euro_cost < euro_pool:
                 # buy
                 buy_order = ac.buy(price='{}'.format(price_to_buy), size=LIMIT_VOLUME,product_id=PRODUCT)
@@ -101,23 +102,34 @@ def generate_sell_order(ac, pc):
     try:
         buy = 0
         sell = 0
+        fills_buy = []
         for order in fills[0]:
             if order['side'] == 'buy':
+                order_info = ac.get_order(order['order_id'])
+                create_time  = order_info['created_at']
+                realize_time = order_info['done_at']
+                order_id = order['order_id']
+                price = order['price']
+                #print(create_time,realize_time, order_id, order['side'],price)
+                fills_buy.append([create_time,realize_time,order_id,price])
+
                 buy += 1
+
             if order['side'] == 'sell':
                 sell += 1
+        
+        fills_buy.sort(key=lambda x:x[1]+x[0])
+
         n = buy - sell
         if n == 0:
             return
-        for order in fills[0]:
-            if order['side'] == 'buy':
-                price_to_sell = eval(order['price']) + 10
-                # sell
-                sell_order = ac.sell(price='{}'.format(price_to_sell),size='{}'.format(LIMIT_VOLUME),product_id=PRODUCT)
-                if 'id' in sell_order:
-                    logger.info('{:6s} ORDER AT {:.8f} WITH {:.8f}'.format('SELL', price_to_sell, euro_pool))
-            n -= 1
-            if n == 0:break
+        for i in range(n):
+            order_id = fills_buy[-i-1][2]
+            price_to_sell = eval(fills_buy[-i-1][3]) + 10
+            # sell
+            sell_order = ac.sell(price='{}'.format(price_to_sell),size='{}'.format(LIMIT_VOLUME),product_id=PRODUCT)
+            if 'id' in sell_order:
+                logger.info('{:6s} ORDER AT {:.8f} WITH {:.8f}'.format('SELL', price_to_sell, euro_pool))
 
     except Exception as e:
         logger.critical('--------------------')

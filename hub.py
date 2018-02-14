@@ -35,5 +35,4 @@ while True:
     n+=1
     engine.generate_buy_order(ac, pc, n)  
     engine.generate_sell_order(ac, pc)
-    sleep(1)
 
