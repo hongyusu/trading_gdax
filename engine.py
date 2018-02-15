@@ -11,6 +11,9 @@ import time
 import sys
 from time import time
 from time import sleep
+import re
+import gdax
+
 
 logging.basicConfig(format='%(asctime)s %(name)15s %(levelname)10s:%(message)s')
 logger = logging.getLogger('gdax.engine')
@@ -30,26 +33,27 @@ euro_pool = LIMIT_EURO
 price_pool = [0]*10
 
 
-#def log_current_status(current_price): 
-#    '''
-#    log current status
-#    '''
-#    bc_cost = sum(btc_price_pool) * LIMIT_VOLUME 
-#    bc_value = len(btc_price_pool) * LIMIT_VOLUME * current_price
-#    bc_profit = bc_value - bc_cost
-#    profit = bc_value + euro_pool - LIMIT_EURO
-#    btc_price_pool_min = min(btc_price_pool)
-#
-#    logger.info('PRICE {:.3f} MY {:.3f} EURO_REMAIN {:.8f} COIN_COST {:.8f} COIN_VALUE {:.8f} COIN_PROFIT {:.6f} PROFIT {:.6f}'.format(
-#        current_price,
-#        btc_price_pool_min,
-#        euro_pool, 
-#        bc_cost,
-#        bc_value,
-#        bc_profit,
-#        profit
-#        ))
+# initialization
+configs = {}
+for line in open('./utils/configs_prod.ini'):
+    if line.startswith('APIKEY'):
+        APIKEY = re.sub('^APIKEY=','',line.strip())
+    if line.startswith('APISECRET'):
+        APISECRET = re.sub('^APISECRET=','',line.strip())
+    if line.startswith('PASSPHRASE'):
+        PASSPHRASE = re.sub('^PASSPHRASE=','',line.strip())
 
+# public client
+pc = gdax.PublicClient()
+# authorized client
+ac = gdax.AuthenticatedClient(APIKEY, APISECRET, PASSPHRASE)
+
+# all buy order 
+pending_buy_order = {} 
+order_info = ac.get_orders()[0]
+for order in order_info:
+    if order['side'] == 'buy':
+        pending_buy_order[order['id']] = eval(order['price'])
 
 def buy_order_from_pp():
     global price_pool
@@ -63,7 +67,7 @@ def buy_order_from_pp():
         price_pool[-4]))
     try:
         if price_pool[-1] < price_pool[-2] and price_pool[-2] < price_pool[-3] and price_pool[-3] < price_pool[-4]:
-            #return False 
+            return False 
             return True
         else:
             return False
@@ -72,7 +76,7 @@ def buy_order_from_pp():
         traceback.print_exc()
         logger.critical('--------------------')
 
-def generate_buy_order(ac, pc, n):
+def generate_buy_order(n):
 
     try:
         ask_price_list = pc.get_product_order_book(PRODUCT,level=1)['asks']
@@ -82,54 +86,38 @@ def generate_buy_order(ac, pc, n):
         price_pool.append(price_to_buy)
 
         if buy_order_from_pp():
-            price_to_buy -= 0.05
+            price_to_buy -= 0.1
             euro_cost = price_to_buy * LIMIT_VOLUME 
-            euro_pool = eval(ac.get_account('e1ce1c04-208f-4e18-8062-52961c9c7eb7')['balance']) - 30
+            euro_pool = eval(ac.get_account('e1ce1c04-208f-4e18-8062-52961c9c7eb7')['balance'])
             if euro_cost < euro_pool:
                 # buy
                 buy_order = ac.buy(price='{}'.format(price_to_buy), size=LIMIT_VOLUME,product_id=PRODUCT)
-                #buy_order = {'id':'53a88d80-f55a-4ea7-a3b9-946f79b9685f'}
+                pending_buy_order[buy_order['id']] = price_to_buy
                 logger.info('{:6s} ORDER AT {:.8f} WITH {:.8f}'.format('BUY', price_to_buy, euro_pool))
+                sleep(1)
 
     except Exception as e:
         logger.critical('--------------------')
         traceback.print_exc()
         logger.critical('--------------------')
 
-def generate_sell_order(ac, pc):
-
-    fills = ac.get_fills()
+def generate_sell_order():
     try:
-        buy = 0
-        sell = 0
-        fills_buy = []
-        for order in fills[0]:
-            if order['side'] == 'buy':
-                order_info = ac.get_order(order['order_id'])
-                create_time  = order_info['created_at']
-                realize_time = order_info['done_at']
-                order_id = order['order_id']
-                price = order['price']
-                #print(create_time,realize_time, order_id, order['side'],price)
-                fills_buy.append([create_time,realize_time,order_id,price])
-
-                buy += 1
-
-            if order['side'] == 'sell':
-                sell += 1
-        
-        fills_buy.sort(key=lambda x:x[1]+x[0])
-
-        n = buy - sell
-        if n == 0:
+        print(pending_buy_order)
+        if len(pending_buy_order.keys()) == 0:
             return
-        for i in range(n):
-            order_id = fills_buy[-i-1][2]
-            price_to_sell = eval(fills_buy[-i-1][3]) + 10
-            # sell
-            sell_order = ac.sell(price='{}'.format(price_to_sell),size='{}'.format(LIMIT_VOLUME),product_id=PRODUCT)
-            if 'id' in sell_order:
+        to_remove = []
+        for order_id,price_to_sell in pending_buy_order.items():
+            price_to_sell += 30
+            order_info = ac.get_order(order_id)
+            if 'id' in order_info.keys():
+                continue
+            else:
+                sell_order = ac.sell(price='{}'.format(price_to_sell),size='{}'.format(LIMIT_VOLUME),product_id=PRODUCT)
+                to_remove.append(order_id)
                 logger.info('{:6s} ORDER AT {:.8f} WITH {:.8f}'.format('SELL', price_to_sell, euro_pool))
+        for order_id in to_remove:
+            pending_buy_order.pop(order_id, None)
 
     except Exception as e:
         logger.critical('--------------------')
