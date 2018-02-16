@@ -13,6 +13,7 @@ from time import time
 from time import sleep
 import re
 import gdax
+import random
 
 
 logging.basicConfig(format='%(asctime)s %(name)15s %(levelname)10s:%(message)s')
@@ -67,7 +68,6 @@ def buy_order_from_pp():
         price_pool[-4]))
     try:
         if price_pool[-1] < price_pool[-2] and price_pool[-2] < price_pool[-3] and price_pool[-3] < price_pool[-4]:
-            return False 
             return True
         else:
             return False
@@ -79,6 +79,7 @@ def buy_order_from_pp():
 def generate_buy_order(n):
 
     try:
+        sleep(0.5)
         ask_price_list = pc.get_product_order_book(PRODUCT,level=1)['asks']
         price_to_buy, _, _ = ask_price_list[0]
         price_to_buy = eval(price_to_buy)
@@ -92,9 +93,10 @@ def generate_buy_order(n):
             if euro_cost < euro_pool:
                 # buy
                 buy_order = ac.buy(price='{}'.format(price_to_buy), size=LIMIT_VOLUME,product_id=PRODUCT)
+                buy_order = {'id':'fbe6bd5e-912c-4cb5-86f8-f20c47130fb0'}
                 pending_buy_order[buy_order['id']] = price_to_buy
                 logger.info('{:6s} ORDER AT {:.8f} WITH {:.8f}'.format('BUY', price_to_buy, euro_pool))
-                sleep(1)
+                sleep(2)
 
     except Exception as e:
         logger.critical('--------------------')
@@ -103,21 +105,18 @@ def generate_buy_order(n):
 
 def generate_sell_order():
     try:
-        print(pending_buy_order)
         if len(pending_buy_order.keys()) == 0:
             return
         to_remove = []
-        for order_id,price_to_sell in pending_buy_order.items():
+        for pending_buy_order_id,price_to_sell in pending_buy_order.items():
             price_to_sell += 30
-            order_info = ac.get_order(order_id)
-            if 'id' in order_info.keys():
-                continue
-            else:
+            order_info = ac.get_fills(order_id=pending_buy_order_id)[0]
+            if len(order_info) > 0:
                 sell_order = ac.sell(price='{}'.format(price_to_sell),size='{}'.format(LIMIT_VOLUME),product_id=PRODUCT)
-                to_remove.append(order_id)
+                to_remove.append(pending_buy_order_id)
                 logger.info('{:6s} ORDER AT {:.8f} WITH {:.8f}'.format('SELL', price_to_sell, euro_pool))
-        for order_id in to_remove:
-            pending_buy_order.pop(order_id, None)
+        for pending_buy_order_id in to_remove:
+            pending_buy_order.pop(pending_buy_order_id, None)
 
     except Exception as e:
         logger.critical('--------------------')
