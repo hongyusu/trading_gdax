@@ -91,9 +91,9 @@ def generate_buy_order(n):
         price_pool.append(price_to_buy)
         price_to_buy -= 0.1
 
-        if abs(last_buy_price-price_to_buy)>5 and buy_order_from_pp():
+        if abs(last_buy_price-price_to_buy)>10 and buy_order_from_pp():
             euro_cost = price_to_buy * LIMIT_VOLUME 
-            euro_pool = eval(ac.get_account('e1ce1c04-208f-4e18-8062-52961c9c7eb7')['available']) - 30
+            euro_pool = eval(ac.get_account('e1ce1c04-208f-4e18-8062-52961c9c7eb7')['available']) - 0
             if euro_cost < euro_pool:
                 # buy
                 buy_order = ac.buy(price='{}'.format(price_to_buy), size=LIMIT_VOLUME,product_id=PRODUCT)
