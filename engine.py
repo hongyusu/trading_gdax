@@ -15,7 +15,6 @@ import re
 import gdax
 import random
 
-
 logging.basicConfig(format='%(asctime)s %(name)15s %(levelname)10s:%(message)s')
 logger = logging.getLogger('gdax.engine')
 logger.setLevel(logging.INFO)
@@ -24,13 +23,11 @@ logger.setLevel(logging.DEBUG)
 # TODO: read from configuration file
 LIMIT_EURO = 10
 LIMIT_VOLUME = 1e-3 
-BUY_ORDER_DELAY_FACTOR = 2
-BUY_ORDER_RECOVER_FACTOR = 3
-BUY_ORDER_MAX_DELAY_SEC = 128
 PRODUCT = 'BTC-EUR'
+DELTA_BUY_PRICE = 15
+DELTA_SELL_PRICE = 50
 
 # global variables 
-euro_pool = LIMIT_EURO 
 price_pool = [0]*10
 
 
@@ -60,7 +57,7 @@ last_buy_price = 0
 
 def buy_order_from_pp():
     global price_pool
-    logger.debug("<--- {:.2f} --  {} -- {:.2f} -- {} -- {:.2f} -- {} -- {:.2f}".format(
+    logger.debug("<--- {:8.2f} --  {} -- {:8.2f} -- {} -- {:8.2f} -- {} -- {:8.2f}".format(
         price_pool[-1], 
         price_pool[-1] < price_pool[-2], 
         price_pool[-2], 
@@ -82,6 +79,8 @@ def buy_order_from_pp():
 
 def generate_buy_order(n):
     global last_buy_price
+    global LIMIT_EURO
+    global DELTA_BUY_PRICE
 
     try:
         sleep(0.5)
@@ -91,17 +90,17 @@ def generate_buy_order(n):
         price_pool.append(price_to_buy)
         price_to_buy -= 0.1
 
-        if abs(last_buy_price-price_to_buy)>10 and buy_order_from_pp():
+        if abs(last_buy_price - price_to_buy) > DELTA_BUY_PRICE and buy_order_from_pp():
             euro_cost = price_to_buy * LIMIT_VOLUME 
-            euro_pool = eval(ac.get_account('e1ce1c04-208f-4e18-8062-52961c9c7eb7')['available']) - 0
-            if euro_cost < euro_pool:
+            account_info = ac.get_account('e1ce1c04-208f-4e18-8062-52961c9c7eb7')
+            if euro_cost < account_info['available'] - LIMIT_EURO:
                 # buy
                 buy_order = ac.buy(price='{}'.format(price_to_buy), size=LIMIT_VOLUME,product_id=PRODUCT)
                 print(buy_order)
                 pending_buy_order[buy_order['id']] = price_to_buy
-                logger.info('{:6s} ORDER AT {:.8f} WITH {:.8f}'.format('BUY', price_to_buy, euro_pool))
+                logger.info('{:6s} ORDER AT {:.8f} WHEN BALANCE {:.8f} AVAILABLE {:.8f} HOLD {:.8f}'.format('BUY', price_to_buy, account_info['balance'], account_info['available'], account_info['hold']))
                 last_buy_price = price_to_buy
-                price_pool.append(0)
+                price_pool.append(-1)
                 sleep(3)
 
     except Exception as e:
@@ -115,13 +114,13 @@ def generate_sell_order():
             return
         to_remove = []
         for pending_buy_order_id,price_to_sell in pending_buy_order.items():
-            price_to_sell += 50
+            price_to_sell += DELTA_SELL_PRICE
             order_info = ac.get_fills(order_id=pending_buy_order_id)[0]
             if len(order_info) > 0:
                 sell_order = ac.sell(price='{:.2f}'.format(price_to_sell),size='{}'.format(LIMIT_VOLUME),product_id=PRODUCT)
                 print(sell_order)
                 to_remove.append(pending_buy_order_id)
-                logger.info('{:6s} ORDER AT {:.8f} WITH {:.8f}'.format('SELL', price_to_sell, euro_pool))
+                logger.info('{:6s} ORDER AT {:.8f}'.format('SELL', price_to_sell))
         for pending_buy_order_id in to_remove:
             pending_buy_order.pop(pending_buy_order_id, None)
 
