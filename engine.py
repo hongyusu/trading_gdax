@@ -17,15 +17,16 @@ import gdax
 import random
 
 configs = cp.get_configs()
-API_KEY          = configs.get("API_KEY")
-API_SECRET       = configs.get("API_SECRET")
-API_PASSPHRASE   = configs.get("API_PASSPHRASE")
-EURO_ACCOUNT     = configs.get("EURO_ACCOUNT")
-LIMIT_EURO       = configs.get("LIMIT_EURO")
-LIMIT_VOLUME     = configs.get("LIMIT_VOLUME")
-PRODUCT_NAME     = configs.get("PRODUCT_NAME")
-DELTA_BUY_PRICE  = configs.get("DELTA_BUY_PRICE")
-DELTA_SELL_PRICE = configs.get("DELTA_SELL_PRICE")
+API_KEY           = configs.get("API_KEY")
+API_SECRET        = configs.get("API_SECRET")
+API_PASSPHRASE    = configs.get("API_PASSPHRASE")
+EURO_ACCOUNT      = configs.get("EURO_ACCOUNT")
+LIMIT_EURO        = configs.get("LIMIT_EURO")
+LIMIT_VOLUME      = configs.get("LIMIT_VOLUME")
+PRODUCT_NAME      = configs.get("PRODUCT_NAME")
+DELTA_BUY_PRICE   = configs.get("DELTA_BUY_PRICE")
+DELTA_SELL_PRICE  = configs.get("DELTA_SELL_PRICE")
+PRICE_SENSITIVITY = configs.get("PRICE_SENSITIVITY")
 
 logging.basicConfig(format='%(asctime)s %(name)15s %(levelname)10s:%(message)s')
 logger = logging.getLogger('gdax.engine')
@@ -42,6 +43,7 @@ logger.info("{:35} {}".format("LIMIT_VOLUME", LIMIT_VOLUME))
 logger.info("{:35} {}".format("PRODUCT_NAME", PRODUCT_NAME))
 logger.info("{:35} {}".format("DELTA_BUY_PRICE", DELTA_BUY_PRICE))
 logger.info("{:35} {}".format("DELTA_SELL_PRICE", DELTA_SELL_PRICE))
+logger.info("{:35} {}".format("PRICE_SENSITIVITY", PRICE_SENSITIVITY))
 logger.info("{}".format('-'*93))
 
 # global variables 
@@ -65,15 +67,15 @@ def buy_order_from_pp():
     global price_pool
     logger.debug("<--- {:8.2f} --  {:6s} -- {:8.2f} -- {:6s} -- {:8.2f} -- {:.6s} -- {:8.2f}".format(
         price_pool[-1], 
-        str(price_pool[-1] < price_pool[-2]), 
+        str(price_pool[-1] + PRICE_SENSITIVITY < price_pool[-2]), 
         price_pool[-2], 
-        str(price_pool[-2] < price_pool[-3]), 
+        str(price_pool[-2] + PRICE_SENSITIVITY < price_pool[-3]), 
         price_pool[-3], 
-        str(price_pool[-3] < price_pool[-4]), 
+        str(price_pool[-3] + PRICE_SENSITIVITY < price_pool[-4]), 
         price_pool[-4]))
 
     try:
-        if price_pool[-1] < price_pool[-2] and price_pool[-2] < price_pool[-3] and price_pool[-3] < price_pool[-4]:
+        if price_pool[-1] + PRICE_SENSITIVITY < price_pool[-2] and price_pool[-2] + PRICE_SENSITIVITY < price_pool[-3] and price_pool[-3] + PRICE_SENSITIVITY < price_pool[-4]:
             return True
         else:
             return False
@@ -89,7 +91,7 @@ def generate_buy_order(n):
     global DELTA_BUY_PRICE
 
     try:
-        sleep(0.5)
+        sleep(1)
         ask_price_list = pc.get_product_order_book(PRODUCT_NAME,level=1)['asks']
         price_to_buy, _, _ = ask_price_list[0]
         price_to_buy = eval(price_to_buy)
