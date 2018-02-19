@@ -48,6 +48,7 @@ logger.info("{}".format('-'*93))
 
 # global variables 
 price_pool = [0]*10
+flag_pool = [0]*10
 
 
 # clients 
@@ -65,17 +66,11 @@ last_buy_price = 0
 
 def buy_order_from_pp():
     global price_pool
-    logger.debug("<--- {:8.2f} --  {:6s} -- {:8.2f} -- {:6s} -- {:8.2f} -- {:.6s} -- {:8.2f}".format(
-        price_pool[-1], 
-        str(price_pool[-1] + PRICE_SENSITIVITY < price_pool[-2]), 
-        price_pool[-2], 
-        str(price_pool[-2] + PRICE_SENSITIVITY < price_pool[-3]), 
-        price_pool[-3], 
-        str(price_pool[-3] + PRICE_SENSITIVITY < price_pool[-4]), 
-        price_pool[-4]))
+    global flag_pool
+    logger.debug("AMOUNT: {:2d} INFO: {}".format(sum(flag_pool[-11:-1]),flag_pool[-11:-1]))
 
     try:
-        if price_pool[-1] + PRICE_SENSITIVITY < price_pool[-2] and price_pool[-2] + PRICE_SENSITIVITY < price_pool[-3] and price_pool[-3] + PRICE_SENSITIVITY < price_pool[-4]:
+        if sum(flag_pool[-11:-1]) > 8:
             return True
         else:
             return False
@@ -89,12 +84,18 @@ def generate_buy_order(n):
     global last_buy_price
     global LIMIT_EURO
     global DELTA_BUY_PRICE
+    global price_pool
+    global flag_pool
 
     try:
         sleep(1)
         ask_price_list = pc.get_product_order_book(PRODUCT_NAME,level=1)['asks']
         price_to_buy, _, _ = ask_price_list[0]
         price_to_buy = eval(price_to_buy)
+        if price_to_buy < price_pool[-1] - PRICE_SENSITIVITY:
+            flag_pool.append(1)
+        else:
+            flag_pool.append(0)
         price_pool.append(price_to_buy)
         price_to_buy -= 0.1
 
@@ -108,7 +109,7 @@ def generate_buy_order(n):
                 pending_buy_order[buy_order['id']] = price_to_buy
                 logger.info('{:6s} ORDER AT {:.8f} WHEN BALANCE {} AVAILABLE {} HOLD {}'.format('BUY', price_to_buy, account_info['balance'], account_info['available'], account_info['hold']))
                 last_buy_price = price_to_buy
-                price_pool.append(-1)
+                flag_pool.append(0)
                 sleep(3)
 
     except Exception as e:
