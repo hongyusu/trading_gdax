@@ -70,7 +70,7 @@ def buy_order_from_pp():
     logger.debug("AMOUNT: {:2d} INFO: {}".format(sum(flag_pool[-11:-1]),flag_pool[-11:-1]))
 
     try:
-        if sum(flag_pool[-11:-1]) > 8:
+        if sum(flag_pool[-11:-1]) > 6:
             return True
         else:
             return False
