@@ -1,2 +1,2 @@
+# cryptocurrency trading 
 
-# BITCOIN TRADING VIA GDAX
