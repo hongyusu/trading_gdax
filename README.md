@@ -12,6 +12,8 @@
 
 ```mermaid
 sequenceDiagram
-Trading platform->>Algorithm trading platform: hello
+participant TradingPlatform
+participant AlgorithmTradingPlatform
+TradingPlatform->>AlgorithmTradingPlatform: hello
 ```
 
