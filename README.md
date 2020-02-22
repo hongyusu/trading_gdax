@@ -11,5 +11,7 @@
 - Algorithm trading platform (ATP)
 
 ```mermaid
+sequenceDiagram
+Trading platform->>Algorithm trading platform
 ```
 
