@@ -4,7 +4,7 @@
 import glob
 from datetime import datetime
 import pandas as pd
-from Trade import GridTrade
+from Trader import Trader
 
 PATTERN = '%Y-%m-%dT%H:%M:%S'
 
@@ -21,7 +21,6 @@ def process_line(line):
 
 content = []
 for fname in glob.glob('data/*'):
-    print(fname)
     with open(fname) as fin:
         for line in fin.readlines():
             content.append(process_line(line))
@@ -31,14 +30,23 @@ df['date'] = pd.to_datetime(df['date'],format='%Y%m%dT')
 df.set_index('date',inplace=True)
 df.sort_index(inplace=True)
 
-trader = GridTrade(10000)
+res = []
+trader = Trader(10000)
 for i,price in enumerate(df['open']):
-    trader.trade((df.index[i],price))
-    trader.query_portfolio(df.index[i])
+    r = trader.trade((df.index[i],price))
+    if r != []: res+=r
+    #trader.query_portfolio(df.index[i])
 
-exit()
-# plot
+
 fig = df['close'].plot(figsize=(20,10))
+for r in res:
+    df1 = pd.DataFrame([[r[0],r[1]],[r[2],r[3]]],columns=['date','price'])
+    df1['date'] = pd.to_datetime(df1['date'],format='%Y%m%dT')
+    df1.set_index('date',inplace=True)
+
+    df1.plot(ax=fig,color='black')
+    fig.legend([])
+
 fig.figure.savefig('plots/figure.pdf')
 
 
