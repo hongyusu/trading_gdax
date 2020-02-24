@@ -1,5 +1,3 @@
-
-
 class SellTrigger:
     def __init__(self, parameters):
         self.parameters = parameters
@@ -32,20 +30,18 @@ class BuyTrigger:
                 r = [(purchaseAmount, purchasePrice)]
         return r
 
-
-
-
-
 class Trader:
     def __init__(self, deposite):
         self.portfolio = {'cash':deposite, 'value':0, 'prod':[]}
+        # TODO get portfolio
+        # self.portfolio = self.__retrive_portfolio()
         self.leads = [0]*10
         self.parameters = {
                 "MIN_AMOUNT": 0.001,
                 "BUY_THRESHOLD": 0.1,
                 "BUY_TOLERANCE": 0.03,
                 "BUY_POWER": 0.1,
-                "SELL_THRESHOLD": 0.05,}
+                "SELL_THRESHOLD": 0.03,}
         self.buyTriggers = [BuyTrigger(self.parameters)]
         self.sellTriggers = [SellTrigger(self.parameters)]
 
