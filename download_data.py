@@ -17,7 +17,7 @@ while True:
     if not os.path.isfile(fname):
         rates = pc.get_product_historic_rates('BTC-EUR', granularity=3600, start=startDate, end=endDate)
         print(startDate,endDate,fname,len(rates))
-        if len(rates) > 200:
+        if len(rates) >= 150:
             time.sleep(2)
             with open(fname,'w') as fout:
                 for rate in rates:
