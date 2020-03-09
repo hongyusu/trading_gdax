@@ -33,12 +33,11 @@ trader = Trader(10000)
 for i,price in enumerate(df['open']):
     r = trader.trade((df.index[i],price))
     if r != []: res+=r
-    #trader.query_portfolio(df.index[i])
+    trader.query_portfolio(df.index[i])
 
 
 fig = df['close'].plot(figsize=(40,15))
 for r in res:
-    print(r)
     df1 = pd.DataFrame([[r[0],r[1]],[r[2],r[3]]],columns=['date','price'])
     df1['date'] = pd.to_datetime(df1['date'],format='%Y%m%dT')
     df1.set_index('date',inplace=True)
