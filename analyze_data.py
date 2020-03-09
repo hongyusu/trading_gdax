@@ -36,7 +36,7 @@ for i,price in enumerate(df['open']):
     #trader.query_portfolio(df.index[i])
 
 
-fig = df['close'].plot(figsize=(40,15))
+fig = df['close'].plot(figsize=(80,15))
 for r in res:
     print(r)
     df1 = pd.DataFrame([[r[0],r[1]],[r[2],r[3]]],columns=['date','price'])
